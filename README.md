@@ -1,1 +1,1 @@
-# BigData_Assignment02
+# Group7_BigData_Assignment02
