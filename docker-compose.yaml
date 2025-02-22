@@ -1,0 +1,260 @@
+x-airflow-common:
+  &airflow-common
+  build: .
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
+  env_file:
+    - .env
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    DBT_PROJECT_DIR: /opt/airflow/dbt_data_pipeline
+    DBT_PROFILES_DIR: /opt/airflow/dbt_data_pipeline/config
+
+    # AWS S3 & Snowflake Credentials from .env file
+    AWS_BUCKET_NAME: ${AWS_BUCKET_NAME}
+    AWS_REGION: ${AWS_REGION}
+
+    # Snowflake Connection
+    SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+    SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+    SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
+    SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
+    SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE}
+    SNOWFLAKE_SCHEMA: ${SNOWFLAKE_SCHEMA}
+    SNOWFLAKE_DBT_ROLE: ${SNOWFLAKE_DBT_ROLE}
+    SNOWFLAKE_SCHEMA_DBT: ${SNOWFLAKE_SCHEMA_DBT}
+    AIRFLOW_UID: ${AIRFLOW_UID:-50000}  # ✅ Added to fix missing variable warning
+
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/config:/opt/airflow/config
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/dbt_data_pipeline:/opt/airflow/dbt_data_pipeline
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+    user: "0:0"
+
+  redis:
+    image: redis:7.2-bookworm
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
+    user: "0:0"
+
+  airflow-webserver:
+    build:
+      context: ./airflow  # ✅ Fixed build context path to ensure Dockerfile is found
+      dockerfile: Dockerfile
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./logs:/opt/airflow/logs
+    user: "${AIRFLOW_UID:-50000}:0"
+
+  airflow-scheduler:
+    build:
+      context: ./airflow  # ✅ Fixed build context path to ensure Dockerfile is found
+      dockerfile: Dockerfile
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    user: "${AIRFLOW_UID:-50000}:0"
+
+  airflow-worker:
+    build:
+      context: ./airflow  # ✅ Fixed build context path to ensure Dockerfile is found
+      dockerfile: Dockerfile
+    <<: *airflow-common
+    command: celery worker
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    user: "${AIRFLOW_UID:-50000}:0"
+
+  airflow-triggerer:
+    build:
+      context: ./airflow  # ✅ Fixed build context path to ensure Dockerfile is found
+      dockerfile: Dockerfile
+    <<: *airflow-common
+    command: triggerer
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    user: "${AIRFLOW_UID:-50000}:0"
+
+  airflow-init:
+    build:
+      context: ./airflow  # ✅ Fixed build context path to ensure Dockerfile is found
+      dockerfile: Dockerfile
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        if [[ -z "${AIRFLOW_UID}" ]]; then
+          echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
+        fi
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        chmod -R 777 /sources/logs /sources/dags /sources/plugins
+        exec /entrypoint airflow version
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+    user: "0:0"
+
+  airflow-cli:
+    build:
+      context: ./airflow  # ✅ Fixed build context path to ensure Dockerfile is found
+      dockerfile: Dockerfile
+    <<: *airflow-common
+    profiles:
+      - debug
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command:
+      - bash
+      - -c
+      - airflow
+    user: "${AIRFLOW_UID:-50000}:0"
+
+  flower:
+    <<: *airflow-common
+    command: celery flower
+    profiles:
+      - flower
+    ports:
+      - "5555:5555"
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    user: "${AIRFLOW_UID:-50000}:0"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - ENV=development
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      airflow-webserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    user: "0:0"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    user: "0:0"
+
+volumes:
+  postgres-db-volume:
