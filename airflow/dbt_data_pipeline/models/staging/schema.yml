@@ -1,0 +1,98 @@
+version: 2
+
+models:
+  - name: stg_raw_sub
+    description: "Staging model for sub table"
+    columns:
+      - name: adsh
+        description: "Unique identifier for a filing"
+        tests:
+          - unique
+          - not_null
+      - name: cik
+        description: "Central Index Key for company"
+        tests:
+          - not_null
+      - name: fy
+        description: "Fiscal Year (should be an integer)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1900
+              max_value: 2100
+      - name: fp
+        description: "Fiscal Period (should be in Q1, Q2, etc.)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Q1', 'Q2', 'Q3', 'Q4']
+
+  - name: stg_raw_num
+    description: "Staging model for numerical financial data"
+    columns:
+      - name: adsh
+        description: "Filing ID"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_raw_sub')
+              field: adsh
+      - name: tag
+        description: "Financial Metric"
+        tests:
+          - not_null
+      - name: value
+        description: "Financial Value"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: -99999999999999999
+              max_value: 99999999999999999
+
+  - name: stg_raw_pre
+    description: "Staging model for financial statement presentation"
+    columns:
+      - name: adsh
+        description: "Filing ID"
+        tests:
+          - relationships:
+              to: ref('stg_raw_sub')
+              field: adsh
+      - name: stmt
+        description: "Statement Type"
+        tests:
+          - not_null
+      - name: plabel
+        description: "Presentation Label"
+        tests:
+          - not_null
+
+  - name: stg_raw_tag
+    description: "Staging model for financial tag metadata"
+    columns:
+      - name: tag
+        description: "Tag Name"
+        tests:
+          - not_null
+      - name: datatype
+        description: "Type of data (monetary, text, etc.)"
+        tests:
+          - not_null
+
+  - name: stg_json_table
+    description: "Staging model for JSON financial data"
+    columns:
+      - name: file_name
+        description: "Name of the JSON file"
+        tests:
+          - unique
+          - not_null
+      - name: cik
+        description: "Central Index Key for company"
+        tests:
+          - not_null
+      - name: company_name
+        description: "Company Name"
+        tests:
+          - not_null
+      
