@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+requests
+snowflake-connector-python
+beautifulsoup4
+sqlalchemy
+snowflake-sqlalchemy
+python-dotenv
