@@ -1,0 +1,82 @@
+version: 2
+
+sources:
+  - name: financial_db
+    database: FINANCIAL_DB_DATA
+    schema: RAW_DATA_SCHEMA
+    tables:
+      - name: sub
+        description: "Submission data from SEC filings"
+        columns:
+          - name: adsh
+            description: "Unique identifier for a filing"
+          - name: cik
+            description: "Central Index Key for company"
+          - name: name
+            description: "Company name"
+          - name: sic
+            description: "Standard Industrial Classification code"
+          - name: fye
+            description: "Fiscal Year End"
+          - name: form
+            description: "Filing Form Type"
+          - name: period
+            description: "Reporting Period"
+          - name: fy
+            description: "Fiscal Year"
+          - name: fp
+            description: "Fiscal Period"
+          - name: filed
+            description: "Filing Date"
+
+      - name: num
+        description: "Numerical financial statement data"
+        columns:
+          - name: adsh
+            description: "Filing ID"
+          - name: tag
+            description: "Financial Metric"
+          - name: ddate
+            description: "Date of Value"
+          - name: qtrs
+            description: "Number of Quarters"
+          - name: uom
+            description: "Unit of Measurement"
+          - name: value
+            description: "Financial Value"
+
+      - name: pre
+        description: "Presentation of financial statement data"
+        columns:
+          - name: adsh
+            description: "Filing ID"
+          - name: report
+            description: "Report Type"
+          - name: stmt
+            description: "Statement Type (Income Statement, Balance Sheet, etc.)"
+          - name: plabel
+            description: "Presentation Label"
+          
+      - name: tag
+        description: "Financial Tag Metadata"
+        columns:
+          - name: tag
+            description: "Tag Name"
+          - name: version
+            description: "Version of the taxonomy"
+          - name: datatype
+            description: "Type of data (monetary, text, etc.)"
+          - name: tlabel
+            description: "Tag Label"
+
+  - name: json_financials
+    database: FINANCIAL_DB_DATA
+    schema: JSON_DATA_SCHEMA
+    tables:
+      - name: json_table
+        description: "JSON-transformed SEC financial data"
+        columns:
+          - name: file_name
+            description: "Name of the JSON file"
+          - name: "JSON_CONTENT"
+            description: "Financial Data stored as JSON (VARIANT type)"
