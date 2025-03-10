@@ -1,0 +1,17 @@
+selenium
+requests
+boto3
+webdriver-manager
+python-dotenv
+pandas
+requests
+dbt-snowflake
+apache-airflow
+apache-airflow-providers-amazon
+apache-airflow-providers-snowflake
+apache-airflow[celery]
+apache-airflow-providers-redis
+snowflake-connector-python
+streamlit
+plotly
+dask[complete]
