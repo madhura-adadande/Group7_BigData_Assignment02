@@ -142,9 +142,9 @@ docker compose up --build
 11. Go to the **Fact Tables** Page, where the **year** and **quarter** will be automatically selected.Then click on **Trigger FACT Table Processing** button, to run the dag and execute predefined queries and custom query.
 12. Navigate to the **Json Table** Page, where the year and quarter will be automatically selected.Then click on **Trigger JSON Data Processing** button,  to run the dag and execute predefined queries and custom query.
 
-Contributions
-Vemana Anil Kumar - 60%
-Ashwin Badamikar - 20%
-Madhura Adadande - 20%
-WE ATTEST THAT WE HAVEN’T USED ANY OTHER STUDENTS’ WORK IN OUR ASSIGNMENT AND ABIDE BY THE POLICIES LISTED IN THE STUDENT HANDBOOK
+Contributions<br>
+Vemana Anil Kumar - 60%<br>
+Ashwin Badamikar - 20%<br>
+Madhura Adadande - 20%<br>
+WE ATTEST THAT WE HAVEN’T USED ANY OTHER STUDENTS’ WORK IN OUR ASSIGNMENT AND ABIDE BY THE POLICIES LISTED IN THE STUDENT HANDBOOK<br>
 
