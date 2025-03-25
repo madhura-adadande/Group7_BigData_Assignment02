@@ -9,6 +9,7 @@ This project automates the pipeline for financial data by scraping data from a w
 Streamlit Applicaation: http://138.197.102.155:8501 <br>
 Airflow: http://138.197.102.155:8081 <br>
 FastAPI: http://138.197.102.155:8000/docs <br>
+CodeLabs link: https://codelabs-preview.appspot.com/?file_id=1JnKVT-JgqfqjgryZbKk4Eo6zXO4J7eeh1fbKN3O9zAY#6 <br>
 
 ## Technologies Used
 
