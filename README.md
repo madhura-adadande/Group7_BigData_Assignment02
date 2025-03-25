@@ -10,6 +10,7 @@ Streamlit Applicaation: http://138.197.102.155:8501 <br>
 Airflow: http://138.197.102.155:8081 <br>
 FastAPI: http://138.197.102.155:8000/docs <br>
 CodeLabs link: https://codelabs-preview.appspot.com/?file_id=1JnKVT-JgqfqjgryZbKk4Eo6zXO4J7eeh1fbKN3O9zAY#6 <br>
+Video Link: https://drive.google.com/file/d/1iFdFTVn_JHd3zj5fnzO0Ow9555oUy-cI/view?usp=sharing
 
 ## Technologies Used
 
@@ -140,3 +141,10 @@ docker compose up --build
 10. On the side bar, navigate to the **Raw Tables** page, select the **year** and **quarter**. Then click on **Trigger Raw Data Processing** button, to run the dag and execute predefined queries and custom query.
 11. Go to the **Fact Tables** Page, where the **year** and **quarter** will be automatically selected.Then click on **Trigger FACT Table Processing** button, to run the dag and execute predefined queries and custom query.
 12. Navigate to the **Json Table** Page, where the year and quarter will be automatically selected.Then click on **Trigger JSON Data Processing** button,  to run the dag and execute predefined queries and custom query.
+
+Contributions
+Vemana Anil Kumar - 60%
+Ashwin Badamikar - 20%
+Madhura Adadande - 20%
+WE ATTEST THAT WE HAVEN’T USED ANY OTHER STUDENTS’ WORK IN OUR ASSIGNMENT AND ABIDE BY THE POLICIES LISTED IN THE STUDENT HANDBOOK
+
